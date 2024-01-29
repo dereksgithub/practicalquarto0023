@@ -9,7 +9,7 @@ remotes::install_github("yihui/xaringan")
 
 
 ```{r}
-
+urban <- vect(urban)
 ```
 
 

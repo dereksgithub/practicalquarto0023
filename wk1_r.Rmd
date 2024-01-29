@@ -1,0 +1,448 @@
+## Week 1 R practice
+
+
+
+```{r}
+library(sf)
+library(terra)
+library(raster)
+
+```
+```{r}
+bare_earth <- st_read("d:/OneDrive - University College London/T2/CASA0023 Remote Sensing//data/Bare_Earth_Polygon_Polygon.shp")
+grass <- st_read("d:/OneDrive - University College London/T2/CASA0023 Remote Sensing/data/Grass_Polygon_Polygon.shp")
+forest <- st_read("d:/OneDrive - University College London/T2/CASA0023 Remote Sensing/data/Forest_Polygon_Polygon_Polygon.shp")
+urban <- st_read("d:/OneDrive - University College London/T2/CASA0023 Remote Sensing/data/Low_Urban_Polygon_Polygon.shp")
+high_urban <- st_read("d:/OneDrive - University College London/T2/CASA0023 Remote Sensing/data/High_Urban_Polygon_Polygon_Polygon.shp")
+
+```
+
+
+
+
+
+```{r}
+#Landsat equivalent
+bands_sen <- c("1","2", "3", "4", "5", "6", "7", "8")
+bands_lat <- c("1","2", "3", "4", "5", "6", "7", "8","9")
+
+sentinel <- rast("d:/OneDrive - University College London/T2/CASA0023 Remote Sensing/data/geotiff/S2A_MSIL2A_20240126T111331_N0510_R137_T30UWC_20240126T151750_resampled.tif")
+
+names(sentinel) <- bands_sen
+  
+landsat<-rast("d:/OneDrive - University College London/T2/CASA0023 Remote Sensing/data/geotiff/LC09_L2SP_203024_20230905_20230907_02_T1.tif")
+
+names(landsat) <- bands_lat
+
+
+```
+
+
+
+
+
+```{r}
+bare_earth <- st_read("d:/OneDrive - University College London/T2/CASA0023 Remote Sensing//data/Bare_Earth_Polygon_Polygon.shp") %>%
+  vect()
+grass <- st_read("d:/OneDrive - University College London/T2/CASA0023 Remote Sensing/data/Grass_Polygon_Polygon.shp")%>%
+    vect()
+forest <- st_read("d:/OneDrive - University College London/T2/CASA0023 Remote Sensing/data/Forest_Polygon_Polygon_Polygon.shp")%>%
+    vect()
+urban <- st_read("d:/OneDrive - University College London/T2/CASA0023 Remote Sensing/data/Low_Urban_Polygon_Polygon.shp")%>%
+    vect()
+high_urban <- st_read("d:/OneDrive - University College London/T2/CASA0023 Remote Sensing/data/High_Urban_Polygon_Polygon_Polygon.shp")%>%
+    vect()
+```
+
+
+
+
+
+
+
+
+```{r}
+crs(landsat)
+crs(sentinel)
+
+# reproject landsat
+landsat <- project(landsat, sentinel)
+```
+
+
+
+```{r}
+library(tidyverse)
+```
+
+
+
+```{r}
+# extract the values from sentinel for urban landcover
+sen_urban<- terra::extract(sentinel, urban, progress = F)%>%
+  # make to tibble
+  as_tibble()%>%
+  # columns are bands so pivot all the bands (2 to 7) longer
+  # giving a column of band number and another of band values
+  pivot_longer(cols = 2:7, 
+               names_to="bands", 
+               values_to="band_values")%>%
+  # add a column to identify this as sentinel
+  add_column(sensor="sentinel")%>%
+  # add column to identify as urban
+  add_column(land="urban")
+```
+
+
+
+```{r}
+band_fun <- function(sensor, landcover) {
+  col_sensor <- deparse(substitute(sensor))
+  col_land <- deparse(substitute(landcover))
+
+  sen_urban<- terra::extract(sensor, landcover, progress = F)%>%
+    as_tibble()%>%
+    pivot_longer(cols = 2:7, 
+               names_to="bands", 
+               values_to="band_values")%>%
+    add_column(sensor=col_sensor)%>%
+    add_column(land=col_land)
+                 
+}
+```
+
+
+```{r}
+band_fun_all_values <- function(sensor, landcover) {
+  col_sensor <- deparse(substitute(sensor))
+  col_land <- deparse(substitute(landcover))
+
+  sen_urban<- terra::extract(sensor, landcover, progress = F)%>%
+    as_tibble()%>%
+    pivot_longer(cols = 2:7, 
+               names_to="bands", 
+               values_to="band_values")
+                 
+}
+```
+
+
+```{r}
+sen_bare <- band_fun(sentinel, bare_earth)
+sen_grass<- band_fun(sentinel, grass) 
+sen_forest<- band_fun(sentinel, forest) 
+sen_high_urban <- band_fun(sentinel, high_urban) 
+
+lsat_urban<- band_fun(landsat, urban)
+lsat_bare<- band_fun(landsat, bare_earth)
+lsat_grass<- band_fun(landsat, grass)
+lsat_forest<- band_fun(landsat, forest)
+lsat_high_urban <- band_fun(sentinel, high_urban) 
+```
+
+
+```{r}
+sen_lsat <- bind_rows(sen_urban, sen_bare, sen_grass,
+                      sen_forest, sen_high_urban,
+                      lsat_urban, lsat_bare, lsat_grass,
+                      lsat_forest, lsat_high_urban)
+```
+
+
+```{r}
+sen_lsat <- bind_rows(sen_urban, sen_bare, sen_grass,
+                      sen_forest, sen_high_urban,
+                      lsat_urban, lsat_bare, lsat_grass,
+                      lsat_forest, lsat_high_urban)
+```
+
+
+```{r}
+means<- sen_lsat%>%
+  group_by(bands, sensor, land)%>%
+  summarise(Mean=mean(band_values), Std=sd(band_values))
+```
+
+
+```{r}
+p1 <- means %>%
+  filter(sensor=="sentinel") %>%
+  ggplot(., aes(x = bands, y = Mean,
+                col=land))+
+  geom_point()+
+  geom_line(aes(group = land)) +
+  geom_errorbar(aes(ymin = (Mean-Std), ymax = (Mean+Std), width = 0.2))
+p1
+```
+
+
+```{r}
+p2 <- sen_lsat %>%
+  filter(sensor=="sentinel") %>%
+ggplot(., aes(x=band_values, group=land, fill=land)) + 
+  geom_density(alpha = 0.6)+
+#Add a mean vertical line
+  geom_vline(data = . %>% group_by(land) %>% summarise(group_mean = mean(band_values)),
+             aes(xintercept=group_mean, color = land), linetype="dashed", linewidth=1)
+```
+
+
+
+
+
+
+
+
+
+```{r}
+
+p2
+
+```
+
+
+
+
+
+
+```{r}
+
+library(cowplot)
+```
+
+
+```{r}
+
+output<-plot_grid(p1, p2, labels = c('A', 'B'), label_size = 12, ncol=1)
+
+output
+```
+
+
+
+
+
+```{r}
+ggsave("spectral_reflectance.pdf", width = 20, height = 20, units = "cm")
+
+```
+
+
+```{r}
+
+t1<- sen_lsat %>%
+           filter(sensor=="sentinel" & land =="urban")%>%
+           select(band_values)%>%
+           pull()
+
+t2<- sen_lsat %>%
+           filter(sensor=="landsat" & land =="urban")%>%
+           select(band_values)%>%
+           pull()
+
+t.test(t1, t2)
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
