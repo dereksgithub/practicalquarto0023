@@ -120,7 +120,7 @@ class: center, left
 ## CloudSat
 ### Video Introduction
 
-<iframe width="700" height="500" src="https://www.youtube.com/embed/sS3CY5td4RE?si=QUXatqHW3d1MHB47" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+<iframe width="600" height="300" src="https://www.youtube.com/embed/sS3CY5td4RE?si=QUXatqHW3d1MHB47" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 ---
 
@@ -141,7 +141,7 @@ CPR's data have improved cloud representations in atmospheric models, as well as
 
 background-image: url(https://www.earthdata.nasa.gov/s3fs-public/2023-01/CloudSat_dorian.jpeg?VersionId=_vV1K.rFBfOxo9bcA.Xs99LHsJmGJqe.)
 background-size: contain
-background-position: 50% 50%
+background-position: 80% 20%
 class: center, bottom, inverse
 
 
@@ -212,7 +212,7 @@ launch occurred at 3:02:16.721 AM PDT (10:02:16.721 UTC).
 ]
 
 .pull-right[
-<img src="https://cloudsat.atmos.colostate.edu/images/diagram.jpg" width="250" height="450" />
+<img src="https://cloudsat.atmos.colostate.edu/images/diagram.jpg" width="210" height="350" />
 ]
 
 ---
