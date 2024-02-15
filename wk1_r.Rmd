@@ -164,8 +164,73 @@ means<- sen_lsat%>%
 ```
 
 
+
 ```{r}
-p1 <- means %>%
+library(missMethods)
+means_2 = impute_sRHD(means, type = "cols_seq" )
+
+
+
+```
+
+
+
+```{r}
+sen_lsat_2 = impute_sRHD(sen_lsat)
+
+
+
+```
+
+
+```{r}
+
+sen_all <- bind_rows(sen_urban, sen_bare, sen_grass,
+                      sen_forest, sen_high_urban)
+
+lsat_all <- bind_rows(lsat_urban, lsat_bare, lsat_grass,
+                      lsat_forest, lsat_high_urban)
+
+```
+
+
+```{r}
+means_sen<- sen_all%>%
+  group_by(bands, sensor, land)%>%
+  summarise(Mean=mean(band_values), Std=sd(band_values))
+
+
+means_lsat<- lsat_all%>%
+  group_by(bands, sensor, land)%>%
+  summarise(Mean=mean(band_values), Std=sd(band_values))
+```
+
+
+```{r}
+p1 <- means_sen %>%
+  filter(sensor=="sentinel") %>%
+  ggplot(., aes(x = bands, y = Mean,
+                col=land))+
+  geom_point()+
+  geom_line(aes(group = land)) +
+  geom_errorbar(aes(ymin = (Mean-Std), ymax = (Mean+Std), width = 0.2))
+p1
+```
+
+
+```{r}
+p2 <- means_lsat %>%
+  filter(sensor=="sentinel") %>%
+  ggplot(., aes(x = bands, y = Mean,
+                col=land))+
+  geom_point()+
+  geom_line(aes(group = land)) +
+  geom_errorbar(aes(ymin = (Mean-Std), ymax = (Mean+Std), width = 0.2))
+p2
+```
+
+```{r}
+p1 <- means_2 %>%
   filter(sensor=="sentinel") %>%
   ggplot(., aes(x = bands, y = Mean,
                 col=land))+
